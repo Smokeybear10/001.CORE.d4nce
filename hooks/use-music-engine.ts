@@ -53,6 +53,8 @@ export function useMusicEngine() {
   const [structureB, setStructureB] = useState<SongStructure | null>(null)
 
   const engineRef = useRef<MusicEngine | null>(null)
+  const initializedRef = useRef(false)
+  const pendingUpdatesRef = useRef<Partial<MusicObject>[]>([])
   const animationRef = useRef<number | null>(null)
   const transitionUnsubRef = useRef<(() => void) | null>(null)
   const contextBufferRef = useRef(new AudioContextBuffer())
@@ -103,9 +105,14 @@ export function useMusicEngine() {
   }, [])
 
   const initialize = useCallback(async () => {
-    if (!engineRef.current) return
+    if (!engineRef.current || initializedRef.current) return
 
     await engineRef.current.initialize()
+    if (initializedRef.current) return
+    engineRef.current.updateMusicObject(engineRef.current.getMusicObject())
+    pendingUpdatesRef.current.forEach(updates => engineRef.current?.updateMusicObject(updates))
+    pendingUpdatesRef.current = []
+    initializedRef.current = true
     setIsInitialized(true)
 
     let lastMusicObjectRef: MusicObject | null = null
@@ -210,6 +217,7 @@ export function useMusicEngine() {
 
   const updateMusicObject = useCallback((updates: Partial<MusicObject>) => {
     if (engineRef.current) {
+      if (!initializedRef.current) pendingUpdatesRef.current.push(updates)
       engineRef.current.updateMusicObject(updates)
       const updated = engineRef.current.getMusicObject()
       if (updated) { setMusicObject(updated); return }

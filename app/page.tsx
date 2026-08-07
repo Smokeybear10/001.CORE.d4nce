@@ -12,7 +12,6 @@ import { TopBar } from "@/components/top-bar"
 import { TransportBar } from "@/components/transport-bar"
 import { DraggableCard } from "@/components/draggable-card"
 import { ErrorBoundary } from "@/components/error-boundary"
-import { LandingPage } from "@/components/landing/landing"
 import { SlidersHorizontal, Library, Sparkles } from "lucide-react"
 
 const MixerPanel = dynamic(() => import("@/components/mixer-panel").then(m => m.MixerPanel), { ssr: false })
@@ -69,10 +68,6 @@ export default function DJSystem() {
   const [aiExpanded, setAiExpanded] = useState(false)
   const [mixerExpanded, setMixerExpanded] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
-  const [showLanding, setShowLanding] = useState(true)
-  const [hasVisited, setHasVisited] = useState(false)
-  const [mainFadingIn, setMainFadingIn] = useState(false)
-  const [mainFadingOut, setMainFadingOut] = useState(false)
 
   const handleTourOpenCard = useCallback((cardId: string) => {
     if (cardId === "library") setLibraryExpanded(true)
@@ -105,8 +100,6 @@ export default function DJSystem() {
 
   const handleLoadToDeck = useCallback(
     async (track: Track, deck: "A" | "B") => {
-      if (!isInitialized) await initialize()
-
       await loadTrack(deck, track.url)
 
       const trackSettings = {
@@ -145,7 +138,7 @@ export default function DJSystem() {
         attempts++
       }, 250)
     },
-    [isInitialized, initialize, loadTrack, musicEngine, musicObject.tracks, updateMusicObject, setCrossfade],
+    [loadTrack, musicEngine, musicObject.tracks, updateMusicObject, setCrossfade],
   )
 
   const handleApplyTransition = useCallback(
@@ -379,29 +372,9 @@ export default function DJSystem() {
     setAiExpanded(true)
   }, [])
 
-  const handleEnter = useCallback(() => {
-    setMainFadingIn(true)
-    setShowLanding(false)
-    setHasVisited(true)
-    if (!isInitialized) initialize()
-    setTimeout(() => setMainFadingIn(false), 600)
-  }, [isInitialized, initialize])
-
-  const handleLogoClick = useCallback(() => {
-    setMainFadingOut(true)
-    setTimeout(() => {
-      setMainFadingOut(false)
-      setShowLanding(true)
-    }, 500)
-  }, [])
-
-  if (showLanding) {
-    return <LandingPage onEnter={handleEnter} />
-  }
-
   return (
     <ErrorBoundary>
-      <div id="main-content" role="main" className={`relative h-dvh w-screen max-w-[100vw] overflow-hidden bg-[#0d0221] transition-opacity duration-500 ${mainFadingIn ? "animate-[fadeIn_600ms_ease-out]" : ""} ${mainFadingOut ? "opacity-0" : "opacity-100"}`}>
+      <div id="main-content" role="main" className="relative h-dvh w-screen max-w-[100vw] overflow-hidden bg-[#0d0221]">
         {/* Fullscreen visualizer background */}
         <div className="absolute inset-0 z-0" data-tour-id="visualizer">
           <ThreeVisualizer analyserData={analyserData} musicObject={musicObject} transitionState={transitionState} />
@@ -420,7 +393,6 @@ export default function DJSystem() {
           mixerOpen={mixerExpanded}
           onToggleMixer={() => setMixerExpanded(!mixerExpanded)}
           onShowHelp={() => setShowHelp(true)}
-          onLogoClick={handleLogoClick}
         />
 
         {/* Waveform strip — always visible at top */}
@@ -452,10 +424,10 @@ export default function DJSystem() {
         {/* Floating draggable cards — always visible, start minimized */}
         <DraggableCard
           id="mixer"
-          title="Mix"
-          icon={<SlidersHorizontal className="h-2.5 w-2.5 text-violet-300/50" />}
-          defaultPosition={{ x: 8, y: 108 }}
-          defaultSize={{ width: 200, height: Math.min(480, winSize.h - 130) }}
+          title="Mixer"
+          icon={<SlidersHorizontal className="h-3.5 w-3.5 text-violet-200/75" />}
+          defaultPosition={{ x: 16, y: 152 }}
+          defaultSize={{ width: 240, height: Math.min(500, winSize.h - 168) }}
           expanded={mixerExpanded}
           onToggle={() => setMixerExpanded(!mixerExpanded)}
         >
@@ -486,9 +458,9 @@ export default function DJSystem() {
         <DraggableCard
           id="library"
           title="Library"
-          icon={<Library className="h-2.5 w-2.5 text-violet-300/50" />}
-          defaultPosition={{ x: winSize.w - 248, y: 108 }}
-          defaultSize={{ width: 240, height: Math.min(440, winSize.h - 130) }}
+          icon={<Library className="h-3.5 w-3.5 text-violet-200/75" />}
+          defaultPosition={{ x: winSize.w < 640 ? 16 : winSize.w - 276, y: winSize.w < 640 ? 204 : 152 }}
+          defaultSize={{ width: 260, height: Math.min(460, winSize.h - 168) }}
           expanded={libraryExpanded}
           onToggle={() => setLibraryExpanded(!libraryExpanded)}
         >
@@ -501,10 +473,10 @@ export default function DJSystem() {
 
         <DraggableCard
           id="ai-copilot"
-          title="AI"
-          icon={<Sparkles className="h-2.5 w-2.5 text-violet-300/50" />}
-          defaultPosition={{ x: 8, y: winSize.h - 348 }}
-          defaultSize={{ width: 340, height: 320 }}
+          title="AI copilot"
+          icon={<Sparkles className="h-3.5 w-3.5 text-violet-200/75" />}
+          defaultPosition={{ x: winSize.w >= 900 ? 272 : 16, y: winSize.w < 640 ? 256 : Math.max(152, winSize.h - 356) }}
+          defaultSize={{ width: 340, height: Math.min(340, winSize.h - 168) }}
           expanded={aiExpanded}
           onToggle={() => setAiExpanded(!aiExpanded)}
         >
