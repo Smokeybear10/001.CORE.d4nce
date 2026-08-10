@@ -13,6 +13,7 @@ import { TransportBar } from "@/components/transport-bar"
 import { DraggableCard } from "@/components/draggable-card"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { SlidersHorizontal, Library, Sparkles } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const MixerPanel = dynamic(() => import("@/components/mixer-panel").then(m => m.MixerPanel), { ssr: false })
 const LibraryDrawer = dynamic(() => import("@/components/library-drawer").then(m => m.LibraryDrawer), { ssr: false })
@@ -67,9 +68,13 @@ export default function DJSystem() {
   const [libraryExpanded, setLibraryExpanded] = useState(false)
   const [aiExpanded, setAiExpanded] = useState(false)
   const [mixerExpanded, setMixerExpanded] = useState(false)
-  const [showHelp, setShowHelp] = useState(false)
+  const [showHelp, setShowHelp] = useState(true)
+  const [guideTarget, setGuideTarget] = useState<string | null>(null)
+
+  const handleCloseHelp = useCallback(() => setShowHelp(false), [])
 
   const handleTourOpenCard = useCallback((cardId: string) => {
+    setGuideTarget(cardId)
     if (cardId === "library") setLibraryExpanded(true)
     else if (cardId === "mixer") setMixerExpanded(true)
     else if (cardId === "ai-copilot") setAiExpanded(true)
@@ -88,7 +93,7 @@ export default function DJSystem() {
   // Escape minimizes panels
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && !showHelp) {
         if (aiExpanded) setAiExpanded(false)
         else if (libraryExpanded) setLibraryExpanded(false)
         else if (mixerExpanded) setMixerExpanded(false)
@@ -96,7 +101,7 @@ export default function DJSystem() {
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [aiExpanded, libraryExpanded, mixerExpanded])
+  }, [aiExpanded, libraryExpanded, mixerExpanded, showHelp])
 
   const handleLoadToDeck = useCallback(
     async (track: Track, deck: "A" | "B") => {
@@ -424,6 +429,7 @@ export default function DJSystem() {
         {/* Floating draggable cards — always visible, start minimized */}
         <DraggableCard
           id="mixer"
+          className={cn(showHelp && guideTarget === "mixer" && "z-[1000]!")}
           title="Mixer"
           icon={<SlidersHorizontal className="h-3.5 w-3.5 text-violet-200/75" />}
           defaultPosition={{ x: 16, y: 152 }}
@@ -457,6 +463,7 @@ export default function DJSystem() {
 
         <DraggableCard
           id="library"
+          className={cn(showHelp && guideTarget === "library" && "z-[1000]!")}
           title="Library"
           icon={<Library className="h-3.5 w-3.5 text-violet-200/75" />}
           defaultPosition={{ x: winSize.w < 640 ? 16 : winSize.w - 276, y: winSize.w < 640 ? 204 : 152 }}
@@ -473,6 +480,7 @@ export default function DJSystem() {
 
         <DraggableCard
           id="ai-copilot"
+          className={cn(showHelp && guideTarget === "ai-copilot" && "z-[1000]!")}
           title="AI copilot"
           icon={<Sparkles className="h-3.5 w-3.5 text-violet-200/75" />}
           defaultPosition={{ x: winSize.w >= 900 ? 272 : 16, y: winSize.w < 640 ? 256 : Math.max(152, winSize.h - 356) }}
@@ -505,7 +513,7 @@ export default function DJSystem() {
           />
         </DraggableCard>
 
-        <DjHelpModal open={showHelp} onClose={() => setShowHelp(false)} onOpenCard={handleTourOpenCard} />
+        {showHelp && <DjHelpModal onClose={handleCloseHelp} onOpenCard={handleTourOpenCard} />}
       </div>
     </ErrorBoundary>
   )
