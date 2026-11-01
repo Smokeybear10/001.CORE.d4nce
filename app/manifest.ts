@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "D4NCE",
     description:
       "Browser-based DJ system with AI mixing. Dual decks, EQ, stem isolation, effects, and 3D visualization.",
-    start_url: "/?skipIntro",
+    start_url: "/",
     display: "standalone",
     background_color: "#0d0221",
     theme_color: "#0d0221",

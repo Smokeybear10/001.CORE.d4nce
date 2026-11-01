@@ -75,43 +75,43 @@ export function MusicLibrary({ onLoadToDeck, trackA, trackB }: MusicLibraryProps
   useEffect(() => { checkScroll() }, [filtered.length, checkScroll])
 
   return (
-    <div className="overflow-hidden flex flex-col h-full">
+    <div className="overflow-hidden flex flex-col h-full min-h-0">
       {/* Search + upload */}
-      <div className="px-3 pt-2 pb-2 space-y-1.5">
+      <div className="px-3 pt-3 pb-2.5 space-y-2">
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-violet-300/30" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-violet-200/60" />
           <label htmlFor="library-search" className="sr-only">Search tracks</label>
           <input
             id="library-search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
-            className="w-full h-7 pl-7 pr-3 text-[11px] bg-transparent border-b border-violet-500/[0.08] text-violet-100/50 placeholder:text-violet-300/30 focus:outline-none focus:border-white/15 transition-colors"
+            placeholder="Search tracks…"
+            className="w-full h-10 pl-8 pr-3 rounded-md text-sm bg-violet-950/20 border border-violet-300/20 text-violet-50/90 placeholder:text-violet-200/65 focus:outline-none focus:border-violet-300/60 focus:ring-1 focus:ring-violet-300/25 transition-colors"
           />
         </div>
         <input ref={fileInputRef} type="file" accept=".mp3,.wav,.ogg,.m4a,.aac,.flac,audio/*" multiple className="hidden" onChange={handleUpload} />
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="w-full h-7 flex items-center justify-center gap-1.5 text-[10px] font-mono text-violet-300/35 hover:text-violet-300/50 transition-all disabled:opacity-30"
+          className="w-full h-9 flex items-center justify-center gap-2 rounded-md border border-violet-300/20 bg-violet-500/[0.05] text-sm font-semibold text-violet-100/85 hover:text-violet-50 hover:bg-violet-500/10 transition-colors disabled:opacity-40"
         >
-          {uploading ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Upload className="h-2.5 w-2.5" />}
-          {uploading ? "Uploading..." : "Upload"}
+          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+          {uploading ? "Uploading…" : "Upload audio"}
         </button>
-        {uploadError && <p className="text-[9px] text-red-400/50">{uploadError}</p>}
+        {uploadError && <p role="alert" className="text-[11px] leading-relaxed text-red-300/90">{uploadError}</p>}
       </div>
 
       {/* Track list */}
-      <div ref={listRef} className="flex-1 overflow-y-auto relative" style={{ scrollbarWidth: "none" }} onScroll={checkScroll}>
+      <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto relative" onScroll={checkScroll}>
         <div className="px-2 pb-2 space-y-0.5">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-4 w-4 animate-spin text-violet-300/30" />
+              <Loader2 aria-label="Loading tracks" className="h-4 w-4 animate-spin text-violet-200/70" />
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 gap-1.5">
-              <Music className="h-5 w-5 text-violet-300/20" />
-              <p className="text-[10px] text-violet-300/30">{search ? "No results" : "No tracks"}</p>
+              <Music className="h-5 w-5 text-violet-200/50" />
+              <p className="text-[12px] text-violet-200/75">{search ? "No matching tracks" : "Upload audio to get started"}</p>
             </div>
           ) : (
             filtered.map((track) => {
@@ -119,60 +119,66 @@ export function MusicLibrary({ onLoadToDeck, trackA, trackB }: MusicLibraryProps
               const onB = trackB?.id === track.id
               return (
                 <div key={track.id} className={cn(
-                  "group relative px-2.5 py-2 rounded transition-colors cursor-default",
-                  onA ? "bg-amber-500/[0.06] border-l-2 border-l-amber-400/40" :
-                  onB ? "bg-cyan-500/[0.06] border-l-2 border-l-cyan-400/40" :
-                  "hover:bg-violet-500/[0.05] border-l-2 border-l-transparent",
+                  "group relative px-2 py-2.5 rounded-md transition-colors cursor-default",
+                  onA ? "bg-amber-500/[0.08] border-l-2 border-l-amber-400/65" :
+                  onB ? "bg-cyan-500/[0.08] border-l-2 border-l-cyan-400/65" :
+                  "hover:bg-violet-500/[0.08] border-l-2 border-l-transparent",
                 )}>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className={cn(
-                          "text-[11px] truncate leading-tight",
-                          onA ? "text-amber-200/70" : onB ? "text-cyan-200/70" : "text-violet-100/40",
-                        )}>{track.title}</p>
-                        {onA && <span className="shrink-0 text-[8px] font-mono text-amber-400/60">A</span>}
-                        {onB && <span className="shrink-0 text-[8px] font-mono text-cyan-400/60">B</span>}
+                          "text-sm font-semibold truncate leading-snug",
+                          onA ? "text-amber-100/90" : onB ? "text-cyan-100/90" : "text-violet-50/85",
+                        )} title={track.title}>{track.title}</p>
+                        {onA && <span className="shrink-0 text-[11px] font-mono text-amber-300/90">A</span>}
+                        {onB && <span className="shrink-0 text-[11px] font-mono text-cyan-300/90">B</span>}
                       </div>
-                      <p className="text-[9px] font-mono text-violet-300/35 mt-0.5 truncate">
-                        {track.bpm ? `${Math.round(track.bpm)}` : ""}
+                      <p className="text-[11px] font-mono text-violet-200/75 mt-1 truncate">
+                        {track.bpm ? `${Math.round(track.bpm)} BPM` : ""}
                         {track.bpm && track.key ? " · " : ""}
                         {track.key ?? ""}
                         {!track.bpm && !track.key ? (
                           analyzingId === track.id ? (
                             <span className="inline-flex items-center gap-1">
-                              <Loader2 className="h-2 w-2 animate-spin inline" />
+                              <Loader2 aria-label="Analyzing track" className="h-3 w-3 animate-spin inline" />
                             </span>
                           ) : "—"
                         ) : ""}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <div className="grid grid-cols-2 gap-x-1 gap-y-0.5 shrink-0">
                       <button
                         onClick={() => onLoadToDeck(track, "A")}
                         aria-label={`Load ${track.title} to deck A`}
-                        className="px-2 py-0.5 text-[10px] font-mono text-amber-400/40 hover:text-amber-400/80 transition-all"
+                        aria-pressed={onA}
+                        title={onA ? "Loaded in deck A" : "Load to deck A"}
+                        className={cn("h-8 w-8 rounded-md border text-xs font-mono transition-colors max-sm:h-11 max-sm:w-11", onA ? "border-amber-300/50 bg-amber-400/15 text-amber-200" : "border-amber-300/25 text-amber-200/90 hover:bg-amber-400/10 hover:border-amber-300/50")}
                       >A</button>
                       <button
                         onClick={() => onLoadToDeck(track, "B")}
                         aria-label={`Load ${track.title} to deck B`}
-                        className="px-2 py-0.5 text-[10px] font-mono text-cyan-400/40 hover:text-cyan-400/80 transition-all"
+                        aria-pressed={onB}
+                        title={onB ? "Loaded in deck B" : "Load to deck B"}
+                        className={cn("h-8 w-8 rounded-md border text-xs font-mono transition-colors max-sm:h-11 max-sm:w-11", onB ? "border-cyan-300/50 bg-cyan-400/15 text-cyan-200" : "border-cyan-300/25 text-cyan-200/90 hover:bg-cyan-400/10 hover:border-cyan-300/50")}
                       >B</button>
                       <button
                         onClick={() => handleAnalyze(track)}
                         disabled={analyzingId === track.id}
                         aria-label={`Analyze ${track.title}`}
-                        className="w-5 h-5 flex items-center justify-center text-violet-300/30 hover:text-violet-300/50 transition-all disabled:opacity-30"
+                        title="Analyze track"
+                        className="w-8 h-7 rounded flex items-center justify-center text-violet-200/55 hover:text-violet-100 hover:bg-violet-500/10 transition-colors disabled:opacity-40 max-sm:w-11"
                       >
-                        {analyzingId === track.id ? <Loader2 className="h-2 w-2 animate-spin" /> : <Sparkles className="h-2 w-2" />}
+                        {analyzingId === track.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                       </button>
                       <button
                         onClick={() => deleteTrack(track.id, track.url)}
                         aria-label={`Delete ${track.title}`}
-                        className="w-5 h-5 flex items-center justify-center text-violet-300/30 hover:text-violet-300/50 transition-all"
+                        title="Delete track"
+                        className="w-8 h-7 rounded flex items-center justify-center text-violet-200/55 hover:text-red-300 hover:bg-red-400/10 transition-colors max-sm:w-11"
                       >
-                        <Trash2 className="h-2 w-2" />
+                        <Trash2 className="h-3 w-3" />
                       </button>
                     </div>
                   </div>
@@ -184,7 +190,7 @@ export function MusicLibrary({ onLoadToDeck, trackA, trackB }: MusicLibraryProps
         {/* Scroll indicator */}
         {canScrollDown && (
           <div className="sticky bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#110328] to-transparent pointer-events-none flex items-end justify-center pb-1">
-            <span className="text-[8px] font-mono text-violet-300/25 animate-pulse">more tracks</span>
+            <span className="text-[11px] text-violet-200/65">More tracks below</span>
           </div>
         )}
       </div>

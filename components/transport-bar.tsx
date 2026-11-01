@@ -5,7 +5,7 @@ import type { Track, MusicObject, WaveformPeak, CuePoint, LoopRegion } from "@/l
 import { Play, Pause } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-interface TransportBarProps {
+type TransportBarProps = {
   trackA: Track | null
   trackB: Track | null
   musicObject: MusicObject
@@ -79,40 +79,57 @@ function InlineWaveform({
 
   return (
     <div className={cn(
-      "group relative flex-1 min-w-0 h-[48px] rounded-lg overflow-hidden transition-all cursor-pointer",
-      "bg-[#150535]/70 border border-violet-500/[0.1]",
+      "group relative flex-1 min-w-0 h-[72px] rounded-lg overflow-hidden transition-colors",
+      "bg-[#140b2b]/85 border border-violet-200/15",
       isPlaying && (isA
-        ? "border-amber-500/15 shadow-[0_0_12px_rgba(251,191,36,0.06)]"
-        : "border-cyan-500/15 shadow-[0_0_12px_rgba(1,205,254,0.08)]"
+        ? "border-amber-300/40"
+        : "border-cyan-300/40"
       ),
     )}>
       {/* Top info row */}
-      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-2 pt-0.5 pointer-events-none">
-        <div className="flex items-center gap-1 min-w-0">
+      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 pl-3 pr-14 pt-1.5 pointer-events-none">
+        <div className="flex items-center gap-2 min-w-0">
           <span className={cn(
-            "shrink-0 text-[9px] font-mono font-bold",
-            isA ? "text-amber-400/65" : "text-cyan-400/65",
+            "shrink-0 text-xs font-mono font-semibold",
+            isA ? "text-amber-200" : "text-cyan-200",
           )}>{deck}</span>
           {track && (
-            <span className="text-[10px] text-violet-100/45 truncate">{track.title}</span>
+            <span className="truncate text-sm font-semibold text-violet-100">{track.title}</span>
           )}
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {bpm && <span className="text-[9px] font-mono text-violet-300/35 tabular-nums">{Math.round(bpm)}</span>}
-          {camelotKey && <span className="text-[8px] font-mono text-violet-300/35">{camelotKey}</span>}
+        <div className="hidden items-center gap-2 shrink-0 sm:flex">
+          {bpm && <span className="text-[11px] font-mono text-violet-200/80 tabular-nums">{Math.round(bpm)} BPM</span>}
+          {camelotKey && <span className="text-[11px] font-mono text-violet-200/80">{camelotKey}</span>}
         </div>
       </div>
 
       {/* Empty state */}
       {!track && (
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-          <span className="text-[10px] font-mono text-violet-300/40 tracking-wide">Load a track</span>
+          <span className="text-sm font-medium text-violet-200/80">Load a track</span>
         </div>
       )}
 
       {/* Waveform SVG */}
       <div
-        className="h-full w-full"
+        className={cn("absolute inset-y-5 left-2 right-14 rounded-sm", !track && "right-2")}
+        role="slider"
+        aria-label={`Seek deck ${deck}`}
+        aria-valuemin={0}
+        aria-valuemax={duration}
+        aria-valuenow={currentTime}
+        aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
+        aria-disabled={!duration}
+        tabIndex={duration ? 0 : -1}
+        onKeyDown={(e) => {
+          if (!duration) return
+          const target = e.key === "ArrowRight" || e.key === "ArrowUp" ? currentTime + 5
+            : e.key === "ArrowLeft" || e.key === "ArrowDown" ? currentTime - 5
+            : e.key === "Home" ? 0 : e.key === "End" ? duration : null
+          if (target === null) return
+          e.preventDefault()
+          onSeek(Math.max(0, Math.min(duration, target)))
+        }}
         onClick={(e) => {
           if (!duration) return
           const rect = e.currentTarget.getBoundingClientRect()
@@ -132,7 +149,7 @@ function InlineWaveform({
             const played = (i / bars) * 100 < progress
             const h = Math.min(12, bar.h)
             const color = played ? playedColor : unplayedColor
-            const opacity = played ? 0.65 : 0.05
+            const opacity = played ? 0.8 : track ? 0.28 : 0.08
             return (
               <g key={i}>
                 <rect x={i} y={14 - h} width={0.7} height={h} fill={`${color}${opacity})`} />
@@ -161,26 +178,23 @@ function InlineWaveform({
       </div>
 
       {/* Time overlay */}
-      <div className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-between px-2 pb-0.5 pointer-events-none">
-        <span className="text-[8px] font-mono text-violet-300/35 tabular-nums">{formatTime(currentTime)}</span>
-        <span className="text-[8px] font-mono text-violet-300/35 tabular-nums">-{formatTime(remaining)}</span>
+      <div className={cn("absolute inset-x-0 bottom-0 z-10 flex items-center justify-between pl-3 pb-1 pointer-events-none", track ? "pr-14" : "pr-3")}>
+        <span className="text-[11px] font-mono text-violet-200/80 tabular-nums">{formatTime(currentTime)}</span>
+        <span className="text-[11px] font-mono text-violet-200/80 tabular-nums">-{formatTime(remaining)}</span>
       </div>
 
-      {/* Play/pause — centered, visible on hover or when paused */}
+      {/* Play/pause */}
       {track && (
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); isPlaying ? onPause() : onPlay() }}
           aria-label={isPlaying ? `Pause deck ${deck}` : `Play deck ${deck}`}
           className={cn(
-            "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/30 backdrop-blur-sm transition-all",
-            isA ? "text-amber-400/80 hover:text-amber-400" : "text-cyan-400/80 hover:text-cyan-400",
-            isPlaying
-              ? "opacity-0 group-hover:opacity-100"
-              : "opacity-100",
+            "absolute right-1 top-1/2 -translate-y-1/2 z-10 flex h-11 w-11 items-center justify-center rounded-md border transition-colors",
+            isA ? "border-amber-200/20 bg-amber-200/10 text-amber-200 hover:bg-amber-200/20" : "border-cyan-200/20 bg-cyan-200/10 text-cyan-200 hover:bg-cyan-200/20",
           )}
         >
-          {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3 ml-0.5" />}
+          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
         </button>
       )}
     </div>
@@ -201,10 +215,10 @@ export function TransportBar({
 }: TransportBarProps) {
 
   return (
-    <div className="absolute top-[44px] inset-x-0 z-25" data-tour-id="transport">
+    <div className="absolute top-[calc(56px+env(safe-area-inset-top))] inset-x-0 z-25" data-tour-id="transport">
       <div>
         {/* Waveform strips */}
-        <div className="flex gap-1.5 px-3 py-2 sm:px-4">
+        <div className="flex gap-2 px-3 py-2 sm:px-4">
           <InlineWaveform
             deck="A" track={trackA} isPlaying={isPlayingA}
             currentTime={currentTimeA} duration={durationA}
