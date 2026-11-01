@@ -1,181 +1,197 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { X, ChevronLeft, ChevronRight } from "lucide-react"
+import { useState, useLayoutEffect, useRef } from "react"
 import { DJ_HELP_STEPS } from "@/lib/dj-help-steps"
 
-interface DjHelpModalProps {
-  open: boolean
+type DjHelpModalProps = {
   onClose: () => void
-  onOpenCard?: (cardId: string) => void
+  onOpenCard: (cardId: string) => void
 }
 
-export function DjHelpModal({ open, onClose, onOpenCard }: DjHelpModalProps) {
+type GuideLayout = {
+  rect: DOMRect | null
+  top: number
+  left: number
+}
+
+export function DjHelpModal({ onClose, onOpenCard }: DjHelpModalProps) {
   const [step, setStep] = useState(0)
-  const [rect, setRect] = useState<DOMRect | null>(null)
+  const [layout, setLayout] = useState<GuideLayout | null>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
   const current = DJ_HELP_STEPS[step]
+  const isLast = step === DJ_HELP_STEPS.length - 1
 
-  useEffect(() => {
-    if (open) setStep(0)
-  }, [open])
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+    const previousFocus = document.activeElement
+    dialog.showModal()
 
-  // Open the relevant card, then measure after it expands
-  useEffect(() => {
-    if (!open || !current?.target) {
-      setRect(null)
-      return
-    }
-    onOpenCard?.(current.target)
-
-    const timer = setTimeout(() => {
-      const el = document.querySelector(`[data-card-id="${current.target}"]`)
-        ?? document.querySelector(`[data-tour-id="${current.target}"]`)
-      setRect(el?.getBoundingClientRect() ?? null)
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [open, step, current, onOpenCard])
-
-  // Keyboard nav
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === " ") {
-        e.preventDefault()
-        setStep(s => Math.min(s + 1, DJ_HELP_STEPS.length - 1))
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault()
-        setStep(s => Math.max(s - 1, 0))
-      } else if (e.key === "Escape") {
-        onClose()
+    return () => {
+      dialog.close()
+      if (previousFocus instanceof HTMLElement && previousFocus !== document.body) {
+        previousFocus.focus()
+      } else {
+        document.querySelector<HTMLButtonElement>('[aria-label="Show help"]')?.focus()
       }
     }
-    window.addEventListener("keydown", handler)
-    return () => window.removeEventListener("keydown", handler)
-  }, [open, onClose])
+  }, [])
 
-  if (!open || !current) return null
-  const isLast = step === DJ_HELP_STEPS.length - 1
-  const isFirst = step === 0
+  useLayoutEffect(() => {
+    onOpenCard(current.target)
+    const target = document.querySelector<HTMLElement>(`[data-card-id="${current.target}"]`)
+      ?? document.querySelector<HTMLElement>(`[data-tour-id="${current.target}"]`)
+    const card = cardRef.current
+    if (!card) return
+    card.scrollTop = 0
+    card.querySelector<HTMLElement>("#dj-guide-title")?.focus({ preventScroll: true })
 
-  // Position tooltip beside the highlighted element
-  const tooltipW = 300
-  const pos = (() => {
-    if (!rect) return { top: "50%" as string | number, left: "50%" as string | number, transform: "translate(-50%, -50%)" }
+    const measure = () => {
+      const rect = target?.getBoundingClientRect() ?? null
+      const { width, height } = card.getBoundingClientRect()
+      const margin = 12
+      const gap = 12
+      const maxTop = window.innerHeight - height - margin
+      const maxLeft = window.innerWidth - width - margin
+      let top = (window.innerHeight - height) / 2
+      let left = (window.innerWidth - width) / 2
 
-    const spaceRight = window.innerWidth - rect.right
-    const spaceLeft = rect.left
-    const spaceBelow = window.innerHeight - rect.bottom
-    const gap = 12
+      if (rect) {
+        if (rect.right + gap + width <= window.innerWidth - margin) {
+          top = rect.top
+          left = rect.right + gap
+        } else if (rect.left - gap - width >= margin) {
+          top = rect.top
+          left = rect.left - gap - width
+        } else if (rect.bottom + gap + height <= window.innerHeight - margin) {
+          top = rect.bottom + gap
+        } else if (rect.top - gap - height >= margin) {
+          top = rect.top - gap - height
+        } else {
+          top = maxTop
+        }
+      }
 
-    if (spaceRight >= tooltipW + gap) {
-      return { top: Math.max(8, rect.top), left: rect.right + gap }
+      setLayout({
+        rect,
+        top: Math.max(margin, Math.min(top, maxTop)),
+        left: Math.max(margin, Math.min(left, maxLeft)),
+      })
     }
-    if (spaceLeft >= tooltipW + gap) {
-      return { top: Math.max(8, rect.top), left: rect.left - tooltipW - gap }
+
+    let frame = requestAnimationFrame(measure)
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(measure)
     }
-    if (spaceBelow >= 160) {
-      return { top: rect.bottom + gap, left: Math.max(8, Math.min(rect.left, window.innerWidth - tooltipW - 8)) }
+    const observer = new ResizeObserver(scheduleMeasure)
+    const positionObserver = new MutationObserver(scheduleMeasure)
+    observer.observe(card)
+    if (target) {
+      observer.observe(target)
+      positionObserver.observe(target, { attributes: true, attributeFilter: ["style", "class"] })
     }
-    return { top: Math.max(8, rect.top - 160), left: Math.max(8, Math.min(rect.left, window.innerWidth - tooltipW - 8)) }
-  })()
+    window.addEventListener("resize", scheduleMeasure)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+      positionObserver.disconnect()
+      window.removeEventListener("resize", scheduleMeasure)
+    }
+  }, [current, onOpenCard])
 
   return (
-    <>
-      {/* Backdrop with cutout */}
-      <div
-        className="fixed inset-0 z-[200] bg-black/40"
-        onClick={onClose}
-        style={{
-          transition: "clip-path 300ms ease",
-          ...(rect ? {
-            clipPath: `polygon(
-              0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%,
-              ${rect.left - 6}px ${rect.top - 6}px,
-              ${rect.left - 6}px ${rect.bottom + 6}px,
-              ${rect.right + 6}px ${rect.bottom + 6}px,
-              ${rect.right + 6}px ${rect.top - 6}px,
-              ${rect.left - 6}px ${rect.top - 6}px
-            )`,
-          } : {}),
-        }}
-      />
-
-      {/* Highlight ring */}
-      {rect && (
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="dj-guide-title"
+      aria-describedby="dj-guide-description"
+      className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 bg-transparent p-0 text-zinc-100 outline-none backdrop:bg-transparent"
+      onCancel={(event) => {
+        event.preventDefault()
+        onClose()
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Tab") {
+          const buttons = event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")
+          const first = buttons[0]
+          const last = buttons[buttons.length - 1]
+          if (document.activeElement === (event.shiftKey ? first : last)) {
+            event.preventDefault()
+            ;(event.shiftKey ? last : first).focus()
+          }
+          return
+        }
+        if (event.key === "ArrowRight") {
+          event.preventDefault()
+          setStep(value => Math.min(value + 1, DJ_HELP_STEPS.length - 1))
+        } else if (event.key === "ArrowLeft") {
+          event.preventDefault()
+          setStep(value => Math.max(value - 1, 0))
+        }
+      }}
+    >
+      {layout?.rect ? (
         <div
-          className="fixed z-[201] rounded-xl border-2 border-violet-400/60 shadow-[0_0_30px_rgba(167,139,250,0.25)] pointer-events-none"
+          aria-hidden="true"
+          className="pointer-events-none fixed rounded-xl border border-white/50 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]"
           style={{
-            top: rect.top - 4,
-            left: rect.left - 4,
-            width: rect.width + 8,
-            height: rect.height + 8,
-            transition: "top 300ms ease, left 300ms ease, width 300ms ease, height 300ms ease",
+            top: layout.rect.top - 4,
+            left: layout.rect.left - 4,
+            width: layout.rect.width + 8,
+            height: layout.rect.height + 8,
           }}
         />
+      ) : (
+        <div aria-hidden="true" className="pointer-events-none fixed inset-0 bg-black/55" />
       )}
 
-      {/* Tooltip */}
       <div
-        className="fixed z-[202] w-[300px] rounded-xl bg-[#150535]/95 backdrop-blur-lg border border-violet-500/20 shadow-[0_0_40px_rgba(185,103,255,0.15)] p-4"
-        style={{
-          ...pos,
-          transition: "top 300ms ease, left 300ms ease, transform 300ms ease",
-        }}
-        onClick={(e) => e.stopPropagation()}
+        ref={cardRef}
+        data-guide-card
+        className="fixed flex max-h-[calc(100dvh-24px)] w-[340px] max-w-[calc(100vw-24px)] flex-col overflow-y-auto rounded-lg border border-zinc-600 bg-[#1c1c20] p-5 shadow-xl"
+        style={layout
+          ? { top: layout.top, left: layout.left }
+          : { top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
       >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-violet-500/20 bg-violet-500/15 text-[10px] font-mono text-violet-300/70">
-              {current.step}
-            </span>
-            <span className="text-[10px] font-mono text-violet-300/30">
-              {step + 1} / {DJ_HELP_STEPS.length}
-            </span>
-          </div>
+        <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
+          <span className="text-sm tabular-nums text-zinc-400">{step + 1} of {DJ_HELP_STEPS.length}</span>
           <button
+            type="button"
             onClick={onClose}
-            className="flex h-5 w-5 items-center justify-center text-violet-300/20 hover:text-violet-300/60 transition-colors"
+            className="-mr-2 -my-2 min-h-11 rounded px-2 text-sm text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
           >
-            <X className="h-3 w-3" />
+            Skip guide
           </button>
         </div>
 
-        <h3 className="text-[12px] font-medium text-violet-100/80 mb-1">{current.title}</h3>
-        <p className="text-[11px] leading-relaxed text-violet-300/40 mb-4">{current.desc}</p>
+        <div aria-live="polite" aria-atomic="true">
+          <h2 id="dj-guide-title" tabIndex={-1} className="mb-2 text-xl font-semibold leading-tight text-zinc-100 outline-none">{current.title}</h2>
+          <p id="dj-guide-description" className="text-base leading-relaxed text-zinc-300">{current.desc}</p>
+        </div>
 
-        <div className="flex items-center justify-between">
+        <div className="mt-5 flex shrink-0 items-center justify-between gap-3 border-t border-white/10 pt-4">
           <button
-            onClick={() => setStep(s => s - 1)}
-            disabled={isFirst}
-            className="flex items-center gap-1 px-2 py-1 text-[10px] font-mono text-violet-300/30 hover:text-violet-300/60 disabled:opacity-20 disabled:cursor-default transition-colors"
+            type="button"
+            onClick={() => setStep(value => Math.max(value - 1, 0))}
+            disabled={step === 0}
+            className="min-h-11 rounded px-3 text-base font-medium text-zinc-300 transition-colors hover:bg-white/5 hover:text-white disabled:cursor-default disabled:opacity-30"
           >
-            <ChevronLeft className="h-3 w-3" />
             Back
           </button>
-
-          <div className="flex items-center gap-1">
-            {DJ_HELP_STEPS.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setStep(i)}
-                className={`h-1.5 rounded-full transition-all duration-200 ${
-                  i === step
-                    ? "w-4 bg-violet-400/60"
-                    : "w-1.5 bg-violet-400/15 hover:bg-violet-400/30"
-                }`}
-              />
-            ))}
-          </div>
-
           <button
-            onClick={() => isLast ? onClose() : setStep(s => s + 1)}
-            className="flex items-center gap-1 px-2 py-1 text-[10px] font-mono text-violet-300/50 hover:text-violet-300/80 transition-colors"
+            type="button"
+            onClick={() => isLast ? onClose() : setStep(value => value + 1)}
+            className="min-h-11 min-w-20 rounded bg-zinc-100 px-4 text-base font-semibold text-zinc-950 transition-colors hover:bg-white active:bg-zinc-300"
           >
             {isLast ? "Done" : "Next"}
-            {!isLast && <ChevronRight className="h-3 w-3" />}
           </button>
         </div>
       </div>
-    </>
+    </dialog>
   )
 }
