@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { GripHorizontal, Minus, ChevronUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-interface DraggableCardProps {
+type DraggableCardProps = {
   id: string
   title: string
   icon?: React.ReactNode
@@ -28,29 +28,43 @@ export function DraggableCard({
   const [zIndex, setZIndex] = useState(topZ)
   const cardRef = useRef<HTMLDivElement>(null)
   const dragStart = useRef({ mx: 0, my: 0, ox: 0, oy: 0 })
+  const previousDefault = useRef(defaultPosition)
+
+  const constrainPosition = useCallback((position: { x: number; y: number }) => {
+    const top = (document.querySelector('[data-tour-id="transport"]')?.getBoundingClientRect().bottom ?? 144) + 8
+    const width = Math.min(defaultSize?.width ?? 240, window.innerWidth - 24)
+    const height = expanded ? Math.min(defaultSize?.height ?? 44, window.innerHeight - top - 12) : 44
+    return {
+      x: clamp(position.x, 12, window.innerWidth - width - 12),
+      y: clamp(position.y, top, window.innerHeight - height - 12),
+    }
+  }, [defaultSize?.width, defaultSize?.height, expanded])
 
   // Reset to default position when defaultPosition changes (e.g. on mount with viewport-relative values)
   useEffect(() => {
-    setPos(defaultPosition)
-  }, [defaultPosition.x, defaultPosition.y])
+    const changed = previousDefault.current.x !== defaultPosition.x || previousDefault.current.y !== defaultPosition.y
+    previousDefault.current = defaultPosition
+    setPos(position => constrainPosition(changed ? defaultPosition : position))
+  }, [defaultPosition.x, defaultPosition.y, constrainPosition])
 
   // Keep cards in bounds on resize
   useEffect(() => {
     const onResize = () => {
-      const w = defaultSize?.width ?? 200
-      setPos((p) => ({
-        x: clamp(p.x, 0, window.innerWidth - w),
-        y: clamp(p.y, 0, window.innerHeight - 28),
-      }))
+      setPos(constrainPosition)
     }
+    onResize()
     window.addEventListener("resize", onResize)
     return () => window.removeEventListener("resize", onResize)
-  }, [defaultSize?.width])
+  }, [constrainPosition])
 
   const bringToFront = useCallback(() => {
     topZ++
     setZIndex(topZ)
   }, [])
+
+  useEffect(() => {
+    if (expanded) bringToFront()
+  }, [expanded, bringToFront])
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest("button")) return
@@ -59,24 +73,23 @@ export function DraggableCard({
     dragStart.current = { mx: e.clientX, my: e.clientY, ox: pos.x, oy: pos.y }
     setDragging(true)
 
-    const w = defaultSize?.width ?? 200
     const onMove = (ev: PointerEvent) => {
       const dx = ev.clientX - dragStart.current.mx
       const dy = ev.clientY - dragStart.current.my
-      const nx = clamp(dragStart.current.ox + dx, 0, window.innerWidth - w)
-      const ny = clamp(dragStart.current.oy + dy, 0, window.innerHeight - 28)
-      setPos({ x: nx, y: ny })
+      setPos(constrainPosition({ x: dragStart.current.ox + dx, y: dragStart.current.oy + dy }))
     }
 
     const onUp = () => {
       setDragging(false)
       document.removeEventListener("pointermove", onMove)
       document.removeEventListener("pointerup", onUp)
+      document.removeEventListener("pointercancel", onUp)
     }
 
     document.addEventListener("pointermove", onMove)
     document.addEventListener("pointerup", onUp)
-  }, [pos.x, pos.y, bringToFront, defaultSize?.width])
+    document.addEventListener("pointercancel", onUp)
+  }, [pos.x, pos.y, bringToFront, constrainPosition])
 
   const handleToggle = useCallback(() => {
     onToggle()
@@ -85,9 +98,9 @@ export function DraggableCard({
 
   const accentGlow = "shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
   const accentGlowDrag = "shadow-[0_0_16px_rgba(185,103,255,0.06),inset_0_1px_0_rgba(255,255,255,0.06)]"
-  const accentBorder = "border-violet-400/15"
-  const accentBorderDrag = "border-violet-400/30"
-  const accentTitle = "text-violet-200/65"
+  const accentBorder = "border-violet-200/20"
+  const accentBorderDrag = "border-violet-200/45"
+  const accentTitle = "text-violet-100"
   const titleBarHighlight = "border-t border-t-white/[0.04]"
 
   return (
@@ -95,7 +108,7 @@ export function DraggableCard({
       ref={cardRef}
       data-card-id={id}
       className={cn(
-        "absolute top-0 left-0 flex flex-col rounded-[14px] overflow-hidden",
+        "absolute top-0 left-0 flex flex-col rounded-[10px] overflow-hidden shadow-lg",
         "backdrop-blur-[14px] border will-change-transform",
         !dragging && "transition-shadow duration-200",
         dragging ? accentBorderDrag : accentBorder,
@@ -106,16 +119,16 @@ export function DraggableCard({
       style={{
         transform: `translate3d(${pos.x}px,${pos.y}px,0)`,
         zIndex,
-        width: defaultSize?.width,
+        width: `min(${defaultSize?.width ?? 240}px, calc(100vw - 24px))`,
         ...(defaultSize?.height && expanded ? { height: defaultSize.height, maxHeight: `calc(100dvh - ${pos.y}px - 8px)` } : {}),
-        background: "linear-gradient(135deg, rgba(26,10,62,0.55) 0%, rgba(13,2,33,0.65) 100%)",
+        background: "linear-gradient(135deg, rgba(26,16,48,0.9) 0%, rgba(15,8,30,0.92) 100%)",
       }}
       onPointerDown={() => bringToFront()}
     >
       {/* Title bar — always draggable */}
       <div
         className={cn(
-          "flex items-center justify-between px-2.5 h-7 shrink-0 select-none cursor-grab active:cursor-grabbing",
+          "flex h-11 shrink-0 touch-none select-none items-center justify-between pl-3 pr-1 cursor-grab active:cursor-grabbing",
           titleBarHighlight,
         )}
         style={{
@@ -124,19 +137,20 @@ export function DraggableCard({
         onPointerDown={onPointerDown}
       >
         <div className="flex items-center gap-1.5">
-          <GripHorizontal className="h-2.5 w-2.5 text-white/30" />
+          <GripHorizontal className="h-3 w-3 text-violet-200/50" />
           {icon}
-          <span className={cn("text-[9px] font-mono uppercase tracking-[0.15em]", accentTitle)}>
+          <span className={cn("text-xs font-semibold uppercase tracking-[0.08em]", accentTitle)}>
             {title}
           </span>
         </div>
         <button
           type="button"
           onClick={handleToggle}
-          aria-label={expanded ? "Minimize panel" : "Expand panel"}
-          className="flex h-8 w-8 items-center justify-center rounded text-white/35 hover:text-white/55 transition-colors"
+          aria-label={`${expanded ? "Minimize" : "Expand"} ${title.toLowerCase()} panel`}
+          aria-expanded={expanded}
+          className="flex h-11 w-11 items-center justify-center rounded-md text-violet-200/75 transition-colors hover:bg-white/5 hover:text-violet-100"
         >
-          {expanded ? <Minus className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+          {expanded ? <Minus className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
         </button>
       </div>
 

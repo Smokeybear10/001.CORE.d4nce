@@ -77,8 +77,8 @@
 }
 
 @theme inline {
-  --font-sans: "Rajdhani", "Rajdhani Fallback", sans-serif;
-  --font-mono: "Orbitron", "Orbitron Fallback", monospace;
+  --font-sans: var(--font-rajdhani), sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -127,6 +127,16 @@ html {
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  button:not(:disabled),
+  [role="slider"] {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid #c4b5fd;
+    outline-offset: 3px;
   }
 }
 

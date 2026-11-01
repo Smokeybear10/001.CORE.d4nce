@@ -583,14 +583,14 @@ export function GrokChatPanel({
   const audioDescription = audioSnapshot ? describeAudioState(audioSnapshot) : "Silence"
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden [@media(max-height:540px)]:overflow-y-auto [@media(max-height:540px)]:overscroll-contain">
 
       {/* Messages */}
-      <ScrollArea className="flex-1">
-        <div className="px-3 pt-2 pb-3 space-y-2">
+      <ScrollArea className="min-h-0 flex-1 [@media(max-height:540px)]:flex-none">
+        <div className="px-3 pt-3 pb-3 space-y-3">
           {localMessages.length === 0 && (
-            <div className="pt-4 pb-2 space-y-3">
-              <p className="text-[10px] font-mono text-violet-300/40 tracking-wide">
+            <div className="pt-1 pb-1 space-y-3">
+              <p className="text-sm leading-relaxed text-violet-100/85">
                 Control the mix with text or voice.
               </p>
               <div className="grid grid-cols-2 gap-1.5">
@@ -604,7 +604,7 @@ export function GrokChatPanel({
                     key={label}
                     onClick={() => narrate ? triggerTransition() : sendMessage(prompt)}
                     disabled={isLoading}
-                    className="px-2 py-2 rounded-lg text-[10px] font-mono text-violet-300/50 hover:text-violet-200/70 bg-violet-500/[0.04] hover:bg-violet-500/[0.08] border border-violet-500/[0.08] hover:border-violet-400/20 disabled:opacity-30 transition-all text-left"
+                    className="min-h-9 px-2.5 py-2 rounded-md text-sm font-semibold text-violet-100/85 hover:text-violet-50 bg-violet-500/[0.06] hover:bg-violet-500/[0.12] border border-violet-300/15 hover:border-violet-300/35 disabled:opacity-40 transition-colors text-left"
                   >
                     {label}
                   </button>
@@ -614,15 +614,15 @@ export function GrokChatPanel({
           )}
 
           {localMessages.map((message) => (
-            <div key={message.id} className={cn("text-[11px] leading-relaxed", message.role === "user" ? "text-right" : "")}>
+            <div key={message.id} className={cn("text-sm leading-relaxed break-words", message.role === "user" ? "text-right" : "")}>
               {message.role === "user" ? (
-                <span className="inline-block px-2.5 py-1.5 rounded-lg bg-violet-500/[0.08] text-white/60 max-w-[85%]">
+                <span className="inline-block px-3 py-2 rounded-lg bg-violet-500/[0.12] text-violet-50/90 max-w-[90%] text-left">
                   {message.content}
                 </span>
               ) : (
-                <div className="text-white/55 px-0.5">
+                <div className="text-violet-100/85 px-0.5 whitespace-pre-wrap">
                   {message.content.replace(/```json[\s\S]*?```/g, "").trim() || (
-                    <span className="text-violet-300/35 italic">Processing...</span>
+                    <span className="text-violet-200/65 italic">Processing…</span>
                   )}
                 </div>
               )}
@@ -630,17 +630,17 @@ export function GrokChatPanel({
           ))}
 
           {isLoading && (
-            <div className="flex gap-1.5 items-center px-0.5 h-5">
-              <span className="w-1 h-1 rounded-full bg-violet-400/50 animate-bounce [animation-delay:0ms]" />
-              <span className="w-1 h-1 rounded-full bg-violet-400/50 animate-bounce [animation-delay:150ms]" />
-              <span className="w-1 h-1 rounded-full bg-violet-400/50 animate-bounce [animation-delay:300ms]" />
+            <div role="status" aria-label="Copilot is responding" className="flex gap-1.5 items-center px-0.5 h-5">
+              <span className="w-1 h-1 rounded-full bg-violet-300/80 animate-bounce [animation-delay:0ms]" />
+              <span className="w-1 h-1 rounded-full bg-violet-300/80 animate-bounce [animation-delay:150ms]" />
+              <span className="w-1 h-1 rounded-full bg-violet-300/80 animate-bounce [animation-delay:300ms]" />
             </div>
           )}
 
           {interimTranscript && (
-            <div className="text-[11px] text-right">
-              <span className="inline-block px-2.5 py-1.5 rounded-lg bg-red-500/[0.06] text-white/40 italic border border-red-500/10">
-                {interimTranscript}...
+            <div className="text-[13px] text-right">
+              <span className="inline-block px-3 py-2 rounded-lg bg-red-500/[0.08] text-violet-50/80 italic border border-red-400/20">
+                {interimTranscript}…
               </span>
             </div>
           )}
@@ -650,25 +650,25 @@ export function GrokChatPanel({
       </ScrollArea>
 
       {/* Persistent transition button */}
-      <div className="px-2.5 pt-1">
+      <div className="shrink-0 px-3 pt-2 border-t border-violet-300/10">
         <button
           onClick={triggerTransition}
           disabled={isLoading}
-          className="w-full px-2 py-1.5 rounded-lg text-[10px] font-mono text-violet-300/50 hover:text-violet-200/80 bg-violet-500/[0.06] hover:bg-violet-500/[0.12] border border-violet-500/[0.1] hover:border-violet-400/25 disabled:opacity-30 transition-all"
+          className="w-full min-h-9 px-2.5 py-1.5 rounded-md text-sm font-semibold text-violet-100/90 hover:text-violet-50 bg-violet-500/[0.1] hover:bg-violet-500/[0.16] border border-violet-300/20 hover:border-violet-300/40 disabled:opacity-40 transition-colors"
         >
           Transition
         </button>
       </div>
 
       {/* Input */}
-      <div className="px-2.5 pb-2.5 pt-1.5">
+      <div className="shrink-0 px-3 pb-3 pt-2">
         {voiceError && (
-          <p className="text-[10px] text-red-400/60 mb-1.5 px-0.5">{voiceError}</p>
+          <p role="alert" className="text-[11px] leading-relaxed text-red-300/90 mb-2 px-0.5">{voiceError}</p>
         )}
         {isListening && (
           <div className="flex items-center gap-1.5 mb-1.5 px-0.5">
             <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-            <span className="text-[9px] font-mono text-red-400/60">Listening...</span>
+            <span role="status" className="text-[11px] font-mono text-red-300/90">Listening…</span>
           </div>
         )}
         <form onSubmit={handleTextSubmit} className="flex gap-1.5">
@@ -678,10 +678,10 @@ export function GrokChatPanel({
             disabled={!isSupported}
             aria-label={isListening ? "Stop listening" : "Start voice input"}
             className={cn(
-              "shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+              "shrink-0 w-10 h-10 rounded-md flex items-center justify-center transition-colors disabled:opacity-35 disabled:cursor-not-allowed",
               isListening
-                ? "bg-red-500/15 text-red-400"
-                : "text-violet-300/25 hover:text-violet-300/45 hover:bg-violet-500/[0.06]",
+                ? "bg-red-500/15 text-red-300"
+                : "text-violet-200/65 hover:text-violet-100 hover:bg-violet-500/[0.1]",
             )}
           >
             {isListening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
@@ -691,21 +691,21 @@ export function GrokChatPanel({
             id="grok-chat-input"
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
-            placeholder="Ask anything..."
-            className="flex-1 h-8 px-2.5 text-[11px] font-mono bg-transparent border border-violet-500/[0.1] rounded-lg text-white/60 placeholder:text-violet-300/35 focus:outline-none focus:border-violet-400/25 transition-colors"
+            placeholder="Ask the copilot…"
+            className="min-w-0 flex-1 h-10 px-2.5 text-sm bg-violet-950/20 border border-violet-300/20 rounded-md text-violet-50/90 placeholder:text-violet-200/65 focus:outline-none focus:border-violet-300/60 focus:ring-1 focus:ring-violet-300/25 transition-colors"
             disabled={isLoading}
           />
           <button
             type="submit"
             disabled={isLoading || !textInput.trim()}
             aria-label="Send message"
-            className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-violet-300/50 hover:text-violet-200/80 hover:bg-violet-500/[0.08] disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+            className="shrink-0 w-10 h-10 rounded-md flex items-center justify-center text-violet-100/85 hover:text-violet-50 hover:bg-violet-500/[0.12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
-            <Send className="h-3 w-3" />
+            <Send className="h-3.5 w-3.5" />
           </button>
         </form>
         {/* Model selector */}
-        <div className="flex gap-1.5 mt-1.5 px-0.5">
+        <div className="flex gap-1 mt-2 px-0.5">
           {([
             { id: "grok" as const, label: "Grok" },
             { id: "sonnet" as const, label: "Sonnet" },
@@ -714,11 +714,12 @@ export function GrokChatPanel({
             <button
               key={id}
               onClick={() => setSelectedModel(id)}
+              aria-pressed={selectedModel === id}
               className={cn(
-                "px-2.5 py-1.5 rounded text-[10px] font-mono transition-colors",
+                "min-h-7 px-2.5 py-1.5 rounded text-[11px] font-mono transition-colors",
                 selectedModel === id
-                  ? "text-violet-200/70 bg-violet-500/10"
-                  : "text-violet-300/40 hover:text-violet-300/60",
+                  ? "text-violet-50/90 bg-violet-500/15"
+                  : "text-violet-200/60 hover:text-violet-100/90",
               )}
             >
               {label}
