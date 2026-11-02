@@ -107,7 +107,7 @@ export function DjHelpModal({ onClose, onOpenCard }: DjHelpModalProps) {
       ref={dialogRef}
       aria-labelledby="dj-guide-title"
       aria-describedby="dj-guide-description"
-      className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 bg-transparent p-0 text-zinc-100 outline-none backdrop:bg-transparent"
+      className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 bg-transparent p-0 text-violet-100 outline-none backdrop:bg-transparent"
       onCancel={(event) => {
         event.preventDefault()
         onClose()
@@ -138,7 +138,7 @@ export function DjHelpModal({ onClose, onOpenCard }: DjHelpModalProps) {
       {layout?.rect ? (
         <div
           aria-hidden="true"
-          className="pointer-events-none fixed rounded-xl border border-white/50 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]"
+          className="pointer-events-none fixed rounded-xl border border-violet-200/45 shadow-[0_0_0_9999px_rgba(5,2,14,0.45)]"
           style={{
             top: layout.rect.top - 4,
             left: layout.rect.left - 4,
@@ -147,46 +147,46 @@ export function DjHelpModal({ onClose, onOpenCard }: DjHelpModalProps) {
           }}
         />
       ) : (
-        <div aria-hidden="true" className="pointer-events-none fixed inset-0 bg-black/55" />
+        <div aria-hidden="true" className="pointer-events-none fixed inset-0 bg-[#05020e]/45" />
       )}
 
       <div
         ref={cardRef}
         data-guide-card
-        className="fixed flex max-h-[calc(100dvh-24px)] w-[340px] max-w-[calc(100vw-24px)] flex-col overflow-y-auto rounded-lg border border-zinc-600 bg-[#1c1c20] p-5 shadow-xl"
+        className="fixed flex max-h-[calc(100dvh-24px)] w-[340px] max-w-[calc(100vw-24px)] flex-col overflow-y-auto rounded-[10px] border border-violet-200/25 bg-[linear-gradient(135deg,rgba(26,16,48,0.9),rgba(15,8,30,0.92))] p-5 shadow-[0_16px_48px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-[14px]"
         style={layout
           ? { top: layout.top, left: layout.left }
           : { top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
       >
         <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
-          <span className="text-sm tabular-nums text-zinc-400">{step + 1} of {DJ_HELP_STEPS.length}</span>
+          <span className="text-sm tabular-nums text-violet-200/65">{step + 1} of {DJ_HELP_STEPS.length}</span>
           <button
             type="button"
             onClick={onClose}
-            className="-mr-2 -my-2 min-h-11 rounded px-2 text-sm text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
+            className="-mr-2 -my-2 min-h-11 rounded-md px-2 text-sm text-violet-200/75 transition-colors hover:bg-white/5 hover:text-violet-100"
           >
             Skip guide
           </button>
         </div>
 
         <div aria-live="polite" aria-atomic="true">
-          <h2 id="dj-guide-title" tabIndex={-1} className="mb-2 text-xl font-semibold leading-tight text-zinc-100 outline-none">{current.title}</h2>
-          <p id="dj-guide-description" className="text-base leading-relaxed text-zinc-300">{current.desc}</p>
+          <h2 id="dj-guide-title" tabIndex={-1} className="mb-2 text-xl font-semibold leading-tight text-violet-50 outline-none">{current.title}</h2>
+          <p id="dj-guide-description" className="text-base leading-relaxed text-violet-100/85">{current.desc}</p>
         </div>
 
-        <div className="mt-5 flex shrink-0 items-center justify-between gap-3 border-t border-white/10 pt-4">
+        <div className="mt-5 flex shrink-0 items-center justify-between gap-3 border-t border-violet-200/15 pt-4">
           <button
             type="button"
             onClick={() => setStep(value => Math.max(value - 1, 0))}
             disabled={step === 0}
-            className="min-h-11 rounded px-3 text-base font-medium text-zinc-300 transition-colors hover:bg-white/5 hover:text-white disabled:cursor-default disabled:opacity-30"
+            className="min-h-11 rounded-md px-3 text-base font-medium text-violet-200/75 transition-colors hover:bg-white/5 hover:text-violet-100 disabled:cursor-default disabled:opacity-30"
           >
             Back
           </button>
           <button
             type="button"
             onClick={() => isLast ? onClose() : setStep(value => value + 1)}
-            className="min-h-11 min-w-20 rounded bg-zinc-100 px-4 text-base font-semibold text-zinc-950 transition-colors hover:bg-white active:bg-zinc-300"
+            className="min-h-11 min-w-20 rounded-md border border-violet-200/30 bg-violet-300/20 px-4 text-base font-semibold text-violet-50 transition-colors hover:border-violet-200/45 hover:bg-violet-300/30 active:bg-violet-300/15"
           >
             {isLast ? "Done" : "Next"}
           </button>
